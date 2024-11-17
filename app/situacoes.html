@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Situações - G6 Sistema</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand" href="index.html">G6 Sistema</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav">
+                    <li class="nav-item">
+                        <a class="nav-link" href="categorias.html">Categorias</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="situacoes.html">Situações</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="tarefas.html">Tarefas</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <div class="row">
+            <div class="col">
+                <h2>Gerenciamento de Situações</h2>
+                <button type="button" class="btn btn-primary mb-3" onclick="openSituacaoModal()">Nova Situação</button>
+                
+                <table class="table table-striped table-hover">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Nome</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="situacoesTableBody">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for Create/Update -->
+    <div class="modal fade" id="situacaoModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalTitle">Nova Situação</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="situacaoForm">
+                        <input type="hidden" id="situacaoId">
+                        <div class="mb-3">
+                            <label for="situacaoNome" class="form-label">Nome</label>
+                            <input type="text" class="form-control" id="situacaoNome" required>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-primary" onclick="saveSituacao()">Salvar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.min.js"></script>
+
+    <script>
+        let situacaoModal;
+        
+        $(document).ready(function() {
+            situacaoModal = new bootstrap.Modal(document.getElementById('situacaoModal'));
+            loadSituacoes();
+        });
+
+        function loadSituacoes() {
+            axios.get('http://localhost:8000/api/situacoes')
+                .then(function(response) {
+                    const situacoes = response.data;
+                    let tableContent = '';
+                    
+                    situacoes.forEach(situacao => {
+                        tableContent += `
+                            <tr>
+                                <td>${situacao.id}</td>
+                                <td>${situacao.nome}</td>
+                                <td>
+                                    <button class="btn btn-sm btn-warning" onclick="editarSituacao(${situacao.id}, '${situacao.nome}')">Editar</button>
+                                    <button class="btn btn-sm btn-danger" onclick="excluirSituacao(${situacao.id})">Excluir</button>
+                                </td>
+                            </tr>
+                        `;
+                    });
+                    
+                    $('#situacoesTableBody').html(tableContent);
+                })
+                .catch(function(error) {
+                    console.error('Erro ao carregar situações:', error);
+                    $('#situacoesTableBody').html('<tr><td colspan="3" class="text-center">Erro ao carregar situações</td></tr>');
+                });
+        }
+
+        function openSituacaoModal(id = null) {
+            $('#situacaoId').val('');
+            $('#situacaoNome').val('');
+            $('#modalTitle').text('Nova Situação');
+            situacaoModal.show();
+        }
+
+        function editarSituacao(id, nome) {
+            $('#situacaoId').val(id);
+            $('#situacaoNome').val(nome);
+            $('#modalTitle').text('Editar Situação');
+            situacaoModal.show();
+        }
+
+        function saveSituacao() {
+            const id = $('#situacaoId').val();
+            const nome = $('#situacaoNome').val();
+            
+            if (!nome) {
+                alert('Por favor, preencha o nome da situação');
+                return;
+            }
+
+            const method = id ? 'put' : 'post';
+            const url = id ? `http://localhost:8000/api/situacoes/${id}` : 'http://localhost:8000/api/situacoes';
+
+            axios({
+                method: method,
+                url: url,
+                data: { nome: nome }
+            })
+            .then(function() {
+                situacaoModal.hide();
+                loadSituacoes();
+            })
+            .catch(function(error) {
+                const errorMessage = error.response?.data?.message || error.response?.data?.error || 'Erro ao salvar situação';
+                alert(errorMessage);
+            });
+        }
+
+        function excluirSituacao(id) {
+            if (confirm('Deseja realmente excluir esta situação?')) {
+                axios.delete(`http://localhost:8000/api/situacoes/${id}`)
+                    .then(function() {
+                        loadSituacoes();
+                    })
+                    .catch(function(error) {
+                        const errorMessage = error.response?.data?.message || error.response?.data?.error || 'Erro ao excluir situação';
+                        alert(errorMessage);
+                    });
+            }
+        }
+    </script>
+</body>
+</html>
