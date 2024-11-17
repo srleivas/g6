@@ -28,10 +28,7 @@ class SituacoesController extends Controller
         $tarefa = Tarefa::where('situacao_id', '=', $situacao->id)->first();
         
         if (!empty($tarefa)) {
-            return response()->json([
-                'error' => 'Não é possível excluir a situação pois esta se encontra vinculada à uma tarefa.',
-                'message' => 'Não é possível excluir a situação pois esta se encontra vinculada à uma tarefa.',
-            ], 400);
+            throw new \Exception('Não é possível excluir a situação pois esta se encontra vinculada à uma tarefa.');
         }
 
         return $situacao->delete();

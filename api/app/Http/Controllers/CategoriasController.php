@@ -28,10 +28,7 @@ class CategoriasController extends Controller
         $tarefa = Tarefa::where('categoria_id', '=', $categoria->id)->first();
         
         if (!empty($tarefa)) {
-            return response()->json([
-                'error' => 'Não é possível excluir a categoria pois esta se encontra vinculada à uma tarefa.',
-                'message' => 'Não é possível excluir a categoria pois esta se encontra vinculada à uma tarefa.',
-            ], 400);
+            throw new \Exception('Não é possível excluir a categoria pois esta se encontra vinculada à uma tarefa.');
         }
 
         return $categoria->delete();
